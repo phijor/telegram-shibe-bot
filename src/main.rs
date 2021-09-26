@@ -9,7 +9,7 @@ use tokio_stream::wrappers::UnboundedReceiverStream;
 use tracing::{debug, error, info, warn};
 use tracing_subscriber::FmtSubscriber;
 
-use std::borrow::Cow;
+use std::{borrow::Cow, time::Duration};
 
 static APP_USER_AGENT: &str = concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION"),);
 
@@ -25,9 +25,8 @@ async fn run() -> Result<()> {
 
     info!("Starting Shibe bot...");
 
-    let bot = Bot::from_env().auto_send();
-
     let shibe_handler = ShibeInlineQueryHandler::new()?;
+    let bot = Bot::from_env_with_client(shibe_handler.client.clone()).auto_send();
 
     Dispatcher::new(bot)
         .inline_queries_handler(shibe_handler)
@@ -44,7 +43,13 @@ struct ShibeInlineQueryHandler {
 
 impl ShibeInlineQueryHandler {
     fn new() -> Result<Self> {
+        let connect_timeout = Duration::from_secs(5);
+        let timeout = connect_timeout + Duration::from_secs(12);
+
         let client = reqwest::Client::builder()
+            .connect_timeout(connect_timeout)
+            .timeout(timeout)
+            .tcp_nodelay(true)
             .user_agent(APP_USER_AGENT)
             .build()
             .context("Failed to create HTTP client")?;
