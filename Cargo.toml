@@ -8,8 +8,8 @@ edition = "2018"
 [dependencies]
 anyhow = "1.0.44"
 futures = "0.3.17"
-reqwest = { version = "0.11.4", default-features = false, features = ["json"] }
-teloxide = { version = "0.5.2", features = ["auto-send", "macros"] }
+reqwest = { version = "0.11.4", default-features = false, features = ["json", "rustls-tls"] }
+teloxide = { version = "0.5.2", features = ["auto-send", "macros", "rustls", "ctrlc_handler"], default-features = false }
 tokio = { version = "1.11.0", default-features = false, features = ["macros", "rt-multi-thread"] }
 tokio-stream = "0.1.7"
 tracing = "0.1.28"
