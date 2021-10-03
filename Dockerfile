@@ -22,7 +22,6 @@ RUN adduser \
     "${USER}"
 
 # Set up musl dev environment
-RUN rustup target add x86_64-unknown-linux-musl
 RUN apk add musl-dev
 RUN update-ca-certificates
 
@@ -36,11 +35,11 @@ WORKDIR /tmp/telegram-shibe-bot
 
 # Compile all dependencies in their own layer
 COPY Cargo.toml Cargo.lock ./
-RUN cargo build-dependencies --target=x86_64-unknown-linux-musl --release
+RUN cargo build-dependencies --release
 
 # Compile app using cached dependencies
 COPY ./src ./src
-RUN cargo build --target=x86_64-unknown-linux-musl --release
+RUN cargo build --release
 
 ####################################################################################################
 ## Final image
@@ -53,7 +52,7 @@ COPY --from=builder /etc/group /etc/group
 
 # Copy our build
 COPY --from=builder \
-    /tmp/telegram-shibe-bot/target/x86_64-unknown-linux-musl/release/telegram-shibe-bot \
+    /tmp/telegram-shibe-bot/target/release/telegram-shibe-bot \
     /usr/local/bin/
 
 # Use an unprivileged user.
