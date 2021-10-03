@@ -3,7 +3,7 @@
 ####################################################################################################
 ## Builder
 ####################################################################################################
-FROM rust:latest AS builder
+FROM docker.io/library/rust:latest AS builder
 
 RUN rustup target add x86_64-unknown-linux-musl
 RUN apt update && apt install -y musl-tools musl-dev
@@ -32,7 +32,7 @@ RUN cargo build --target x86_64-unknown-linux-musl --release
 ####################################################################################################
 ## Final image
 ####################################################################################################
-FROM alpine:latest
+FROM docker.io/library/alpine:latest
 
 # Import from builder.
 COPY --from=builder /etc/passwd /etc/passwd
