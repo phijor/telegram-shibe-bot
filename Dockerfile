@@ -1,13 +1,12 @@
-# Adapted from: https://kerkour.com/blog/deploy-rust-on-heroku-with-docker/
+# Adapted from:
+# * https://kerkour.com/blog/deploy-rust-on-heroku-with-docker/
+# * https://github.com/ravenexp/crates-io-proxy/blob/master/Dockerfile
+# * https://crates.io/crates/cargo-build-dependencies
 
 ####################################################################################################
 ## Builder
 ####################################################################################################
-FROM docker.io/library/rust:latest AS builder
-
-RUN rustup target add x86_64-unknown-linux-musl
-RUN apt update && apt install -y musl-tools musl-dev
-RUN update-ca-certificates
+FROM docker.io/library/rust:alpine AS builder
 
 # Create appuser
 ENV USER=tgbot
@@ -22,12 +21,26 @@ RUN adduser \
     --uid "${UID}" \
     "${USER}"
 
+# Set up musl dev environment
+RUN rustup target add x86_64-unknown-linux-musl
+RUN apk add musl-dev
+RUN update-ca-certificates
 
-WORKDIR /tgbot
+# Install cargo-build-dependencies to cache build artifacts of all dependencies.
+RUN cargo install cargo-build-dependencies
 
-COPY ./ .
+# Create skeleton cargo project
+RUN cd /tmp && USER=root cargo new --bin telegram-shibe-bot
 
-RUN cargo build --target x86_64-unknown-linux-musl --release
+WORKDIR /tmp/telegram-shibe-bot
+
+# Compile all dependencies in their own layer
+COPY Cargo.toml Cargo.lock ./
+RUN cargo build-dependencies --target=x86_64-unknown-linux-musl --release
+
+# Compile app using cached dependencies
+COPY ./src ./src
+RUN cargo build --target=x86_64-unknown-linux-musl --release
 
 ####################################################################################################
 ## Final image
