@@ -13,9 +13,12 @@ use std::{borrow::Cow, str::FromStr, time::Duration};
 
 static APP_USER_AGENT: &str = concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION"),);
 
-#[tokio::main]
-async fn main() -> Result<()> {
-    run().await
+fn main() -> Result<()> {
+    let runtime = tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .build()
+        .context("Failed to intialize tokio runtime")?;
+    runtime.block_on(run())
 }
 
 async fn run() -> Result<()> {
