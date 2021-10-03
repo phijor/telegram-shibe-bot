@@ -38,12 +38,12 @@ FROM docker.io/library/alpine:latest
 COPY --from=builder /etc/passwd /etc/passwd
 COPY --from=builder /etc/group /etc/group
 
-WORKDIR /tgbot
-
 # Copy our build
-COPY --from=builder /tgbot/target/x86_64-unknown-linux-musl/release/telegram-shibe-bot ./
+COPY --from=builder \
+    /tmp/telegram-shibe-bot/target/x86_64-unknown-linux-musl/release/telegram-shibe-bot \
+    /usr/local/bin/
 
 # Use an unprivileged user.
 USER tgbot:tgbot
 
-CMD ["/tgbot/telegram-shibe-bot"]
+CMD ["/usr/local/bin/telegram-shibe-bot"]
