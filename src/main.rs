@@ -7,7 +7,7 @@ use teloxide::{
 };
 use tokio_stream::wrappers::UnboundedReceiverStream;
 use tracing::{debug, error, info, warn};
-use tracing_subscriber::FmtSubscriber;
+use tracing_subscriber::{EnvFilter, FmtSubscriber};
 
 use std::{borrow::Cow, str::FromStr, time::Duration};
 
@@ -22,7 +22,9 @@ fn main() -> Result<()> {
 }
 
 async fn run() -> Result<()> {
-    let fmt_subscriber = FmtSubscriber::new();
+    let fmt_subscriber = FmtSubscriber::builder()
+        .with_env_filter(EnvFilter::from_default_env())
+        .finish();
     tracing::subscriber::set_global_default(fmt_subscriber)
         .context("Failed to intialize logging")?;
 
@@ -31,8 +33,10 @@ async fn run() -> Result<()> {
     let shibe_handler = ShibeInlineQueryHandler::new()?;
     let bot = Bot::from_env_with_client(shibe_handler.client.clone()).auto_send();
 
+    info!("Dispatching requests...");
     Dispatcher::new(bot)
         .inline_queries_handler(shibe_handler)
+        .setup_ctrlc_handler()
         .dispatch()
         .await;
 
