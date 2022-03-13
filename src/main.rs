@@ -1,3 +1,5 @@
+#![allow(deprecated)]
+
 use anyhow::{Context, Result};
 use futures::{future::BoxFuture, FutureExt};
 use teloxide::{
@@ -115,7 +117,10 @@ impl ShibeInlineQueryHandler {
         let result: Vec<_> = urls
             .iter()
             .filter_map(|url| {
-                let id = match Self::parse_id(url) {
+                let url = reqwest::Url::parse(url).map_err(|e| {
+                    warn!("Skipping image: invalid image URL: {e}")
+                }).ok()?;
+                let id = match Self::parse_id(&url) {
                     Some(id) => id,
                     None => {
                         warn!(url = %url, "Failed to parse image ID from URL, skipping image.");
@@ -123,7 +128,7 @@ impl ShibeInlineQueryHandler {
                     }
                 };
 
-                let photo = InlineQueryResultPhoto::new(id, url.as_str(), url);
+                let photo = InlineQueryResultPhoto::new(id, url.clone(), url);
                 Some(InlineQueryResult::Photo(photo))
             })
             .collect();
@@ -133,8 +138,7 @@ impl ShibeInlineQueryHandler {
         Ok(result)
     }
 
-    fn parse_id(url: &str) -> Option<String> {
-        let url = reqwest::Url::parse(url).ok()?;
+    fn parse_id(url: &reqwest::Url) -> Option<String> {
         url.path_segments()?
             .last()
             .map(|path| path.trim_end_matches(".jpg").to_string())
