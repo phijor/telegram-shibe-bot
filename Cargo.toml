@@ -8,9 +8,9 @@ license = "MIT"
 
 [dependencies]
 anyhow = "1.0.44"
-futures = "0.3.17"
+dptree = "0.1.2"
 reqwest = { version = "0.11.4", default-features = false, features = ["json", "rustls-tls"] }
-teloxide = { version = "0.7.1", features = ["auto-send", "rustls", "ctrlc_handler"], default-features = false }
+teloxide = { version = "0.7.1", features = ["auto-send", "rustls", "ctrlc_handler", "dispatching2", "cache-me"], default-features = false }
 tokio = { version = "1.11.0", default-features = false, features = ["rt-multi-thread"] }
 tokio-stream = "0.1.7"
 tracing = "0.1.28"

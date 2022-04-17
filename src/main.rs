@@ -1,14 +1,10 @@
-#![allow(deprecated)]
-
 use anyhow::{Context, Result};
-use futures::{future::BoxFuture, FutureExt};
+use dptree::endpoint;
 use teloxide::{
-    dispatching::DispatcherHandler,
-    prelude::*,
+    prelude2::*,
     types::{InlineQueryResult, InlineQueryResultPhoto},
 };
-use tokio_stream::wrappers::UnboundedReceiverStream;
-use tracing::{debug, error, info, warn};
+use tracing::{debug, info, warn};
 use tracing_subscriber::{EnvFilter, FmtSubscriber};
 
 use std::{borrow::Cow, str::FromStr, time::Duration};
@@ -33,15 +29,22 @@ async fn run() -> Result<()> {
     info!("Starting Shibe bot...");
 
     let shibe_handler = ShibeInlineQueryHandler::new()?;
+
+    let inline_handler = Update::filter_inline_query().branch(endpoint(
+        |bot, update, shibe_handler: ShibeInlineQueryHandler| shibe_handler.handle(bot, update),
+    ));
+
     let bot = Bot::from_env_with_client(shibe_handler.client.clone()).auto_send();
 
+    let handler = dptree::entry().branch(inline_handler);
+
     info!("Dispatching requests...");
-    Dispatcher::new(bot)
-        .inline_queries_handler(shibe_handler)
+    Dispatcher::builder(bot, handler)
+        .dependencies(dptree::deps![shibe_handler])
+        .build()
         .setup_ctrlc_handler()
         .dispatch()
         .await;
-
     Ok(())
 }
 
@@ -66,13 +69,11 @@ impl ShibeInlineQueryHandler {
         Ok(Self { client })
     }
 
-    async fn handle_inline_query(self, cx: UpdateWithCx<AutoSend<Bot>, InlineQuery>) -> Result<()> {
-        let update = &cx.update;
-
+    async fn handle(self, bot: AutoSend<Bot>, update: InlineQuery) -> Result<()> {
         info!(
             id = %update.id,
             "Inline query received from @{}",
-            Self::extract_username(update)
+            Self::extract_username(&update)
         );
 
         let query: ShibeQuery = update.query.parse().unwrap_or_default();
@@ -83,8 +84,8 @@ impl ShibeInlineQueryHandler {
             .context("Failed to fetch shibes")?;
 
         debug!(id = %update.id, "Sending answer...");
-        cx.requester
-            .answer_inline_query(&update.id, shibes)
+
+        bot.answer_inline_query(&update.id, shibes)
             .await
             .context("Failed to send answer for inline query")?;
 
@@ -117,9 +118,9 @@ impl ShibeInlineQueryHandler {
         let result: Vec<_> = urls
             .iter()
             .filter_map(|url| {
-                let url = reqwest::Url::parse(url).map_err(|e| {
-                    warn!("Skipping image: invalid image URL: {e}")
-                }).ok()?;
+                let url = reqwest::Url::parse(url)
+                    .map_err(|e| warn!("Skipping image: invalid image URL: {e}"))
+                    .ok()?;
                 let id = match Self::parse_id(&url) {
                     Some(id) => id,
                     None => {
@@ -149,29 +150,6 @@ impl ShibeInlineQueryHandler {
             Some(username) => Cow::Borrowed(username),
             None => Cow::Owned(format!("id:{}", query.from.id)),
         }
-    }
-}
-
-impl DispatcherHandler<AutoSend<Bot>, InlineQuery> for ShibeInlineQueryHandler {
-    fn handle(
-        self,
-        updates: DispatcherHandlerRx<AutoSend<Bot>, InlineQuery>,
-    ) -> BoxFuture<'static, ()> {
-        UnboundedReceiverStream::new(updates)
-            .for_each_concurrent(None, move |cx| {
-                let this = self.clone();
-                async {
-                    let id = cx.update.query.clone();
-                    if let Err(err) = this.handle_inline_query(cx).await {
-                        error!(%id, "Failed to handle inline query: {}", err);
-
-                        for cause in err.chain() {
-                            error!(%id, "- caused by: {}", cause);
-                        }
-                    }
-                }
-            })
-            .boxed()
     }
 }
 

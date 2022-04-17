@@ -197,6 +197,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "dptree"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b7fcc437df15b844a38de424170425a6e8b52c79e22364fec6133bcdf18c0abd"
+dependencies = [
+ "futures",
+]
+
+[[package]]
 name = "either"
 version = "1.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1057,7 +1066,7 @@ name = "telegram-shibe-bot"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "futures",
+ "dptree",
  "reqwest",
  "teloxide",
  "tokio",
@@ -1076,6 +1085,7 @@ dependencies = [
  "async-trait",
  "bytes",
  "derive_more",
+ "dptree",
  "flurry",
  "futures",
  "log",
