@@ -4,8 +4,7 @@ mod shibe_api;
 use crate::handlers::handle_inline_query;
 
 use anyhow::{Context, Result};
-use dptree::endpoint;
-use teloxide::prelude2::*;
+use teloxide::prelude::{dptree, *};
 use tracing::info;
 use tracing_subscriber::{EnvFilter, FmtSubscriber};
 
@@ -32,7 +31,8 @@ async fn run() -> Result<()> {
 
     let http_client = make_client().context("Failed to create HTTP client")?;
 
-    let inline_handler = Update::filter_inline_query().branch(endpoint(handle_inline_query));
+    let inline_handler =
+        Update::filter_inline_query().branch(dptree::endpoint(handle_inline_query));
 
     let bot = Bot::from_env_with_client(http_client.clone()).auto_send();
 

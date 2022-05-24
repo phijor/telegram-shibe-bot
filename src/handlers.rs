@@ -2,7 +2,7 @@ use crate::shibe_api::{self, Query};
 
 use anyhow::{Context, Result};
 use teloxide::{
-    prelude2::*,
+    prelude::*,
     types::{InlineQueryResult, InlineQueryResultPhoto},
 };
 use tracing::{debug, info, warn};
