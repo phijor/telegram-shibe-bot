@@ -10,7 +10,7 @@ use tracing::{debug, info, warn};
 use std::borrow::Cow;
 
 pub async fn handle_inline_query(
-    bot: AutoSend<Bot>,
+    bot: Bot,
     update: InlineQuery,
     http_client: reqwest::Client,
 ) -> Result<()> {
